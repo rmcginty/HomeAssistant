@@ -1,0 +1,30 @@
+blueprint:
+  name: Syncronize Two Switches
+  description: 'Synchronize the on/off state of two switches.'
+  domain: automation
+  input:
+    switch_1:
+      name: First switch
+      selector:
+        entity:
+    switch_2:
+      name: Second switch
+      selector:
+        entity:
+mode: restart
+max_exceeded: silent
+variables:
+  switch_1: !input 'switch_1'
+  switch_2: !input 'switch_2'
+trigger:
+  - platform: state
+    entity_id: !input 'switch_1'
+  - platform: state
+    entity_id: !input 'switch_2'
+condition:
+  - condition: template
+    value_template: '{{ states(switch_1) != states(switch_2) }}'
+action:
+  - service: homeassistant.turn_{{ trigger.to_state.state }}
+    data:
+      entity_id: '{% if trigger.from_state.entity_id == switch_1 %} {{ switch_2 }} {% else %} {{ switch_1 }} {% endif %}'

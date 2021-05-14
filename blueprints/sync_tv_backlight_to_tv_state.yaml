@@ -1,0 +1,29 @@
+blueprint:
+  name: Syncronize TV Backlight to TV On/Off State
+  description: 'Synchronize a light to the state of a TV.'
+  domain: automation
+  input:
+    TV:
+      name: TV
+      selector:
+        entity:
+    Backlight:
+      name: Backlight
+      selector:
+        entity:
+          domain: light
+mode: restart
+max_exceeded: silent
+variables:
+  TV: !input 'TV'
+  Backlight: !input 'Backlight'
+trigger:
+  - platform: state
+    entity_id: !input 'TV'
+condition:
+  - condition: template
+    value_template: '{{ states(TV) != states(Backlight) }}'
+action:
+  - service: homeassistant.turn_{{ trigger.to_state.state }}
+    data:
+      entity_id: !input 'Backlight'
