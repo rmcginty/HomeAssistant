@@ -1,0 +1,131 @@
+# ##################################
+# DHouse SSMS-01A1 Scene Single Pole Switch
+# ##################################
+# GPIO00	Relay2i
+# GPIO02	Relay4i
+# GPIO03	Switch2
+# GPIO04	PWM3
+# GPIO05	PWM2
+# GPIO12	Relay3i
+# GPIO13	Switch1
+# GPIO14	PWM1
+# GPIO15	Relay1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+      inverted: true
+    id: button
+    on_multi_click:
+      !include ../button_multi_click.yaml
+
+  - platform: status
+    name: "${friendly_name} Status"
+    id: "${device_name}_status"
+
+switch:
+  - platform: gpio
+    name: "${friendly_name}"
+    id: relay
+    pin: 
+      number: GPIO15
+    on_turn_on:
+      then:
+        - script.execute: on_state_leds
+    on_turn_off:
+      then:
+        - script.execute: off_state_leds
+
+  - platform: gpio
+    id: red_led
+    pin: 
+      number: GPIO0
+      inverted: true
+
+  - platform: gpio
+    id: green_led
+    pin:
+      number: GPIO12
+      inverted: true
+
+  - platform: gpio
+    id: blue_led
+    pin:
+      number: GPIO2
+      inverted: true
+
+light:
+  - platform: rgb
+    name: "${friendly_name} Button Scene"
+    id: rgb_light
+    restore_mode: RESTORE_DEFAULT_ON
+    red: red_output
+    green: green_output
+    blue: blue_output
+    effects:
+      !include ../rgb_effects.yaml
+
+output:
+  - platform: esp8266_pwm
+    id: red_output
+    pin: GPIO14
+
+  - platform: esp8266_pwm
+    id: green_output
+    pin: GPIO5
+
+  - platform: esp8266_pwm
+    id: blue_output
+    pin: GPIO4
+
+script:
+  - id: button_pushed
+    then:
+      - switch.toggle: relay
+
+  - id: on_state_leds
+    then:
+      - switch.turn_off: green_led
+      - switch.turn_on: red_led
+
+  - id: off_state_leds
+    then:
+      - switch.turn_off: red_led
+      - switch.turn_on: green_led
+
+interval:
+  - interval: 250ms
+    then:
+      - if:
+          condition:
+            not:
+              and:
+                - wifi.connected:
+                - api.connected:
+          then:
+            - switch.turn_off: green_led
+            - switch.turn_on: red_led
+            - delay: 150ms
+            - switch.turn_off: red_led
+          else:
+            - lambda: |-
+                auto flag = ((!id(red_led).state) && (!id(green_led).state));
+                if (!flag) {
+                  flag = ((id(relay).state) != (id(red_led).state));
+                }
+
+                if (flag) {
+                  if (id(relay).state) {
+                    id(on_state_leds).execute();
+                  } else {
+                    id(off_state_leds).execute();
+                  }
+                }

@@ -1,0 +1,255 @@
+# ##################################
+# Tessan MJ-SD02 Single Pole Dimmer
+# ##################################
+# GPIO0: up button (inverted, input_pullup)
+# GPIO1: down button (inverted, input_pullup)
+# GPIO3: led5 (inverted)
+# GPIO4: red led (inverted)
+# GPIO5: led4 (inverted)
+# GPIO12: led3 (inverted)
+# GPIO13: pwm
+# GPIO14: led2 (inverted)
+# GPIO15: main button (input_pullup)
+# GPIO16: blue led + relay + led1 (inverted)
+# ##################################
+# Substitutions Required
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+status_led:
+  pin:
+    number: GPIO4
+    inverted: true
+  id: red_led
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO3
+    inverted: true
+    id: led5_output
+
+  - platform: esp8266_pwm
+    pin: GPIO5
+    inverted: true
+    id: led4_output
+
+  - platform: esp8266_pwm
+    pin: GPIO12
+    inverted: true
+    id: led3_output
+
+  - platform: esp8266_pwm
+    pin: GPIO14
+    inverted: true
+    id: led2_output
+
+  - platform: esp8266_pwm
+    pin: GPIO13
+    id: pwm
+    power_supply: relay
+    min_power: 15%
+
+light:
+  - platform: monochromatic
+    id: led5
+    output: led5_output
+    default_transition_length: 0ms
+
+  - platform: monochromatic
+    id: led4
+    output: led4_output
+    default_transition_length: 0ms
+
+  - platform: monochromatic
+    id: led3
+    output: led3_output
+    default_transition_length: 0ms
+
+  - platform: monochromatic
+    id: led2
+    output: led2_output
+    default_transition_length: 0ms
+
+  - platform: monochromatic
+    name: ${friendly_name}
+    output: pwm
+    default_transition_length: 0ms
+    id: dimmer
+
+power_supply:
+  - id: relay
+    pin:
+      number: GPIO16
+      inverted: true
+    enable_time: 0ms
+    keep_on_time: 0ms
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      inverted: true
+      mode: INPUT_PULLUP
+    id: up_button
+    on_release:
+      then:
+        - logger.log: Pushed
+        - lambda: |-
+            if (id(dimmer_lvl) > .91) {
+              id(dimmer_lvl) = 1.0;
+            }
+            else if (id(dimmer_lvl) <= .91) {
+              id(dimmer_lvl) += .083;
+            };
+            id(apply_dimming).execute();
+    on_click:
+      - min_length: 500ms
+        max_length: 2s
+        then:
+          - logger.log: Held
+          - light.turn_on:
+              id: dimmer
+              brightness: 100%
+
+  - platform: gpio
+    pin:
+      number: GPIO1
+      inverted: true
+      mode: INPUT_PULLUP
+    id: down_button
+    on_release:
+      then:
+        - logger.log: Pushed
+        - lambda: |-
+            if (id(dimmer_lvl) < .10) {
+              id(dimmer_lvl) = .01;
+            }
+            else if (id(dimmer_lvl) >= .10) {
+              id(dimmer_lvl) -= .083;
+            };
+            id(apply_dimming).execute();
+    on_click:
+      - min_length: 500ms
+        max_length: 2s
+        then:
+          - logger.log: Held
+          - light.turn_on:
+              id: dimmer
+              brightness: 15%
+
+  - platform: gpio
+    pin:
+      number: GPIO15
+      mode: INPUT_PULLUP
+    id: main_button
+    on_multi_click:
+      !include ../button_multi_click.yaml
+
+globals:
+  - id: dimmer_lvl
+    type: float
+    restore_value: no
+    initial_value: "1.0"
+
+script:
+  - id: apply_dimming
+    then:
+      - lambda: |-
+          auto call = id(dimmer).turn_on();
+          call.set_brightness(id(dimmer_lvl));
+          call.perform();
+      - logger.log:
+          format: "dimmer_lvl = %.2f"
+          args: ["id(dimmer_lvl)"]
+
+  - id: button_pushed
+    then:
+      - light.toggle: dimmer
+
+interval:
+  - interval: 250ms
+    then:
+      - lambda: |-
+          static float last_brightness = 0;
+          static bool last_state = true;
+
+          const float full = 1.0;
+          const float dim = 0.6;
+
+          auto dimmer_vals = id(dimmer).current_values;
+          id(dimmer_lvl) = dimmer_vals.get_brightness();
+
+          if ((last_brightness != id(dimmer_lvl)) || (last_state != dimmer_vals.is_on())) {
+            last_brightness = id(dimmer_lvl);
+            last_state = dimmer_vals.is_on();
+
+            if (dimmer_vals.is_on()) {
+              if (id(dimmer_lvl) > .19) {
+                auto call = id(led2).turn_on();
+                call.set_brightness(full);
+                call.perform();
+              } else if (id(dimmer_lvl) < .20) {
+                auto call = id(led2).turn_off();
+                call.perform();
+              }
+              if (id(dimmer_lvl) > .39) { 
+                auto call = id(led3).turn_on();
+                call.set_brightness(full);
+                call.perform();
+              } else if (id(dimmer_lvl) < .40) {
+                auto call = id(led3).turn_off();
+                call.perform();
+              }
+              if (id(dimmer_lvl) > .59) {
+                auto call = id(led4).turn_on();
+                call.set_brightness(full);
+                call.perform();
+              } else if (id(dimmer_lvl) < .60) {
+                auto call = id(led4).turn_off();
+                call.perform();
+              }
+              if (id(dimmer_lvl) > .79) {
+                auto call = id(led5).turn_on();
+                call.set_brightness(full);
+                call.perform();
+              } else if (id(dimmer_lvl) < .80) {
+                auto call = id(led5).turn_off();
+                call.perform();
+              }
+            } else {
+              if ((id(dimmer_lvl) >= 0.0) && (id(dimmer_lvl) < .40)) { 
+                auto call = id(led2).turn_on();
+                call.set_brightness(dim);
+                call.perform(); 
+              } else { 
+                auto call = id(led2).turn_off();
+                call.perform();
+              }
+              if ((id(dimmer_lvl) >= .40) && (id(dimmer_lvl) < .60)) {
+                auto call = id(led3).turn_on(); 
+                call.set_brightness(dim);
+                call.perform();
+              } else {
+                auto call = id(led3).turn_off();
+                call.perform();
+              }
+              if ((id(dimmer_lvl) >= .60) && (id(dimmer_lvl) < .80)) {
+                auto call = id(led4).turn_on();
+                call.set_brightness(dim);
+                call.perform();
+              } else {
+                auto call = id(led4).turn_off();
+                call.perform();
+              }
+              if (id(dimmer_lvl) >= .80) {
+                auto call = id(led5).turn_on();
+                call.set_brightness(dim);
+                call.perform();
+              } else {
+                auto call = id(led5).turn_off();
+                call.perform();
+              }
+            }
+          }

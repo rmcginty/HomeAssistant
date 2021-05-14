@@ -1,0 +1,46 @@
+# ##################################
+# Gosund SL1 RGB LED Controller - Variant 2
+# ##################################
+# GPIO0:	Button1
+# GPIO4:	PWM1
+# GPIO12:	PWM3
+# GPIO14:	PWM2
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    id: button
+    on_press:
+      - light.toggle: rgb_light
+
+light:
+  - platform: rgb
+    name: ${friendly_name}
+    id: rgb_light
+    red: red_output
+    green: green_output
+    blue: blue_output
+    effects:
+      !include ../rgb_effects.yaml
+
+output:
+  - platform: esp8266_pwm
+    id: red_output
+    pin: GPIO4
+
+  - platform: esp8266_pwm
+    id: green_output
+    pin: GPIO12
+
+  - platform: esp8266_pwm
+    id: blue_output
+    pin: GPIO14

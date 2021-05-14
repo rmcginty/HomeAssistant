@@ -1,0 +1,49 @@
+# Kesen KS-604S Smart Wall Socket with USB
+# GPIO02	Relay3i
+# GPIO05	Button2
+# GPIO12	Relay2
+# GPIO13	Relay1
+# GPIO16	Button1
+
+binary_sensor:
+  - platform: gpio
+    id: button_top
+    pin: GPIO16
+    on_press:
+      - switch.toggle: relay_top
+  - platform: gpio
+    id: buttom_bottom
+    pin: GPIO5
+    on_press:
+      - switch.toggle: relay_bottom
+
+switch:
+  - platform: gpio
+    id: relay_top
+    name: ${friendly_name} Top
+    pin: GPIO13
+    restore_mode: ALWAYS_ON
+  - platform: gpio
+    id: relay_bottom
+    name: ${friendly_name} Bottom
+    pin: GPIO12
+    restore_mode: ALWAYS_ON
+  - platform: template
+    name: ${friendly_name} All
+    lambda: |-
+      if ((id(relay_top).state) and (id(relay_bottom).state)) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: relay_top
+      - switch.turn_on: relay_bottom
+    turn_off_action:
+      - switch.turn_off: relay_top
+      - switch.turn_off: relay_bottom
+
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true

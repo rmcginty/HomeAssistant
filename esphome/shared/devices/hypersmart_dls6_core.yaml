@@ -1,0 +1,50 @@
+# ##################################
+# HyperSmart DLS6 RGBWW LED Light
+# ##################################
+# GPIO04:	PWM2
+# GPIO05:	PWM1
+# GPIO13:	PWM3
+# GPIO14: PWM4
+# GPIO15: PWM5
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+light:
+  - platform: rgbww
+    name: ${friendly_name}
+    id: rgb_light
+    red: output_red
+    green: output_green
+    blue: output_blue
+    cold_white: output_cold_white
+    warm_white: output_warm_white
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2000 K
+    color_interlock: true
+    effects:
+      !include ../rgb_effects.yaml
+
+output:
+  - platform: esp8266_pwm
+    id: output_red
+    pin: GPIO5
+
+  - platform: esp8266_pwm
+    id: output_green
+    pin: GPIO4
+
+  - platform: esp8266_pwm
+    id: output_blue
+    pin: GPIO13
+
+  - platform: esp8266_pwm
+    id: output_cold_white
+    pin: GPIO14
+
+  - platform: esp8266_pwm
+    id: output_warm_white
+    pin: GPIO12

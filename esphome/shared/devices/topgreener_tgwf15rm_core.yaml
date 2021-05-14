@@ -1,0 +1,59 @@
+# ##################################
+# TopGreener TGWF15RM Power Monitoring Wall Outlet
+# ##################################
+# GPIO01	Led2i
+# GPIO03	Button1
+# GPIO04	HLW8012 CF
+# GPIO05	HLWBL CF1
+# GPIO12	HLWBL SEL
+# GPIO13	Led1i
+# GPIO14	Relay1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# default_restore_mode (turn plug on or leave off after power failure)
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    pin: GPIO3
+    id: button
+    on_press:
+      - switch.toggle: relay
+
+switch:
+  - platform: gpio
+    name: ${friendly_name}
+    id: relay
+    pin: GPIO14
+    restore_mode: ${default_restore_mode}
+    on_turn_on:
+      - output.turn_on: led
+    on_turn_off:
+      - output.turn_off: led
+
+output:
+  - platform: gpio
+    id: led
+    pin: GPIO1
+    inverted: true
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+sensor:
+  - platform: hlw8012
+    sel_pin: 12
+    cf_pin: 4
+    cf1_pin: 5
+    current:
+      name: ${friendly_name} Current
+    voltage:
+      name: ${friendly_name} Voltage
+    power:
+      name: ${friendly_name} Power
+    update_interval: 60s

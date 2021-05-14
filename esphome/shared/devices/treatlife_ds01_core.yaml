@@ -1,0 +1,27 @@
+# ##################################
+# TreatLife DS01 Dimmer
+# ##################################
+# GPIO1:	tx_pin
+# GPIO3:	rx_pin
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+tuya:
+
+uart:
+  - id: uart1
+    tx_pin: GPIO1
+    rx_pin: GPIO3
+    stop_bits: 1
+    baud_rate: 9600
+
+light:
+  - platform: tuya
+    id: light1
+    name: ${friendly_name}
+    dimmer_datapoint: 3
+    switch_datapoint: 1

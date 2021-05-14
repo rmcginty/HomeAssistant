@@ -1,0 +1,54 @@
+# ##################################
+# Gosund KS-602S Single Pole Switch
+# ##################################
+# GPIO0:	Button1
+# GPIO12:	Relay1
+# GPIO13:	Led1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: false
+
+binary_sensor:
+  - platform: gpio
+    id: button
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    on_multi_click:
+      !include ../button_multi_click.yaml
+
+script:
+  - id: button_pushed
+    then:
+      - switch.toggle: relay
+
+switch:
+  - platform: gpio
+    name: "${friendly_name}"
+    id: relay
+    pin: GPIO12
+    on_turn_on:
+      - light.turn_on: state_led
+    on_turn_off:
+      - light.turn_off: state_led
+
+output:
+  - platform: esp8266_pwm
+    id: output_state_led
+    pin:
+      number: GPIO13
+      inverted: false
+
+light:
+  - platform: monochromatic
+    output: output_state_led
+    id: state_led

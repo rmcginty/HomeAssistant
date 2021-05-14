@@ -1,0 +1,120 @@
+# ##################################
+# Gosund SW1 Single Pole Switch
+# ##################################
+# GPIO0:	Button1
+# GPIO1:  Led2i (Green) (variant 2)
+# GPIO2:	Led2i (Green) (Variant 1)
+# GPIO14:	Relay1
+# GPIO16:	Led1i (Red)
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+# Files that include this file must
+# define a switch with id of relay
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    id: button
+    pin:
+      number: GPIO00
+      mode: INPUT_PULLUP
+      inverted: true
+    on_multi_click:
+      !include ../button_multi_click.yaml
+
+output:
+  - platform: esp8266_pwm
+    id: red_led_output
+    pin:
+      number: GPIO16
+      inverted: true
+
+  - platform: esp8266_pwm
+    id: green1_led_output
+    pin:
+      number: GPIO1
+      inverted: true
+
+  - platform: esp8266_pwm
+    id: green2_led_output
+    pin:
+      number: GPIO2
+      inverted: true
+
+light:
+  - platform: monochromatic
+    output: red_led_output
+    id: red_led
+    default_transition_length: 250ms
+
+  - platform: monochromatic
+    output: green1_led_output
+    id: green1_led
+    default_transition_length: 250ms
+
+  - platform: monochromatic
+    output: green2_led_output
+    id: green2_led
+    default_transition_length: 250ms
+
+script:
+  - id: on_state_leds
+    then:
+      - light.turn_off: green1_led
+      - light.turn_off: green2_led
+      - light.turn_on:
+          id: red_led
+          brightness: 100%
+
+  - id: off_state_leds
+    then:
+      - light.turn_off: red_led
+      - light.turn_on:
+          id: green1_led
+          brightness: 25%
+      - light.turn_on:
+          id: green2_led
+          brightness: 25%
+
+  - id: button_pushed
+    then:
+      - switch.toggle: relay
+
+interval:
+  - interval: 250ms
+    then:
+      - if:
+          condition:
+            not:
+              and:
+                - wifi.connected:
+                - api.connected:
+          then:
+            - light.turn_off:
+                id: green1_led
+                transition_length: 0ms
+            - light.turn_off:
+                id: green2_led
+                transition_length: 0ms
+            - light.turn_on:
+                id: red_led
+                brightness: 100%
+                flash_length: 150ms
+          else:
+            - lambda: |-
+                auto flag = ((!id(red_led).current_values.is_on()) && (!id(green1_led).current_values.is_on()) && (!id(red_led).current_values.is_on()));
+                if (!flag) {
+                  flag = ((id(relay).state) != (id(red_led).current_values.is_on()));
+                }
+
+                if (flag) {
+                  if (id(relay).state) {
+                    id(on_state_leds).execute();
+                  } else {
+                    id(off_state_leds).execute();
+                  }
+                }

@@ -1,0 +1,79 @@
+# Kesen KS-604S Smart Wall Socket with USB
+# GPIO00 StatusLEDi
+# GPIO03 Button1
+# GPIO04 TopLEDi
+# GPIO05 Button2
+# GPIO12 Relay2
+# GPIO13 Relay1
+# GPIO14 BottomLEDi
+# GPIO15 Relay3i
+
+binary_sensor:
+  - platform: gpio
+    id: button_top
+    pin: GPIO3
+    on_press:
+      - switch.toggle: relay_top
+  - platform: gpio
+    id: buttom_bottom
+    pin: GPIO5
+    on_press:
+      - switch.toggle: relay_bottom
+
+switch:
+  - platform: gpio
+    id: relay_top
+    name: ${friendly_name} Top
+    pin: GPIO13
+    restore_mode: ALWAYS_ON
+    on_turn_on:
+      - output.turn_on: led_top
+    on_turn_off:
+      - output.turn_off: led_top
+  - platform: gpio
+    id: relay_bottom
+    name: ${friendly_name} Bottom
+    pin: GPIO12
+    restore_mode: ALWAYS_ON
+    on_turn_on:
+      - output.turn_on: led_bottom
+    on_turn_off:
+      - output.turn_off: led_bottom
+  - platform: gpio
+    id: relay_usb
+    name: ${friendly_name} USB Port
+    pin: GPIO15
+    restore_mode: ALWAYS_ON
+  - platform: template
+    name: ${friendly_name} All
+    lambda: |-
+      if ((id(relay_top).state) and (id(relay_bottom).state) and (id(relay_usb).state)) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: relay_top
+      - switch.turn_on: relay_bottom
+      - switch.turn_on: relay_usb
+    turn_off_action:
+      - switch.turn_off: relay_top
+      - switch.turn_off: relay_bottom
+      - switch.turn_off: relay_usb
+
+output:
+  - platform: gpio
+    id: led_top
+    pin:
+      number: GPIO4
+      inverted: true
+  - platform: gpio
+    id: led_bottom
+    pin:
+      number: GPIO14
+      inverted: true
+
+status_led:
+  pin:
+    number: GPIO0
+    inverted: true

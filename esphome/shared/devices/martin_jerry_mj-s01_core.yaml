@@ -1,0 +1,52 @@
+# GPIO04	Led1i
+# GPIO05	Led2i
+# GPIO12	Relay1
+# GPIO13	Button1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+status_led:
+  pin:
+    number: GPIO05
+    inverted: true
+
+binary_sensor:
+  - platform: gpio
+    id: button
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+      inverted: true
+    on_multi_click:
+      !include ../button_multi_click.yaml
+
+script:
+  - id: button_pushed
+    then:
+      - switch.toggle: relay
+
+switch:
+  - platform: gpio
+    name: "${friendly_name}"
+    id: relay
+    pin: GPIO12
+    on_turn_on:
+      - light.turn_on: state_led
+    on_turn_off:
+      - light.turn_off: state_led
+
+output:
+  - platform: esp8266_pwm
+    id: output_state_led
+    pin:
+      number: GPIO04
+      inverted: true
+
+light:
+  - platform: monochromatic
+    output: output_state_led
+    id: state_led

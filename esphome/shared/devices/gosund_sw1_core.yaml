@@ -1,0 +1,23 @@
+# ##################################
+# Gosund SW1 Single Pole Switch
+# ##################################
+# See include "shared" file for
+# details
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+<<: !include gosund_sw1_shared_core.yaml
+
+switch:
+  - platform: gpio
+    name: "${friendly_name}"
+    id: relay
+    pin: GPIO14
+    on_turn_on:
+      - script.execute: on_state_leds
+    on_turn_off:
+      - script.execute: off_state_leds

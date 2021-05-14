@@ -1,0 +1,45 @@
+# REQUIRES:
+# Script with name button_pushed to execute code under a 
+# "normal" button push (i.e. toggle the relay)
+
+- timing:
+    - ON for at least 1000ms
+  then:
+    - logger.log: Held
+    - homeassistant.event:
+        event: esphome.button
+        data:
+          name: ${friendly_name}
+          value: held
+- timing:
+    - ON for at most 1000ms
+    - OFF for at most 300ms
+    - ON for at most 1000ms
+    - OFF for at most 300ms
+    - ON for at most 1000ms
+    - OFF for at least 200ms
+  then:
+    - logger.log: Triple
+    - homeassistant.event:
+        event: esphome.button
+        data:
+          name: ${friendly_name}
+          value: triple
+- timing:
+    - ON for at most 1000ms
+    - OFF for at most 300ms
+    - ON for at most 1000ms
+    - OFF for at least 200ms
+  then:
+    - logger.log: Double
+    - homeassistant.event:
+        event: esphome.button
+        data:
+          name: ${friendly_name}
+          value: double
+- timing:
+    - ON for at most 1000ms
+    - OFF for at least 500ms
+  then:
+    - logger.log: Pushed
+    - script.execute: button_pushed

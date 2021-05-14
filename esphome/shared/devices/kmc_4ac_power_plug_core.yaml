@@ -1,0 +1,80 @@
+# ##################################
+# KMC 4AC Power Monitoring Plug
+# Note: Power monitoring not enabled yet
+# ##################################
+# GPIO01	Led1i
+# GPIO04	HLW8012 CF
+# GPIO05	HLWBL CF1
+# GPIO12	HLWBL SEL
+# GPIO13	Relay2
+# GPIO14	Relay3
+# GPIO15	Relay1
+# GPIO16	Button1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO16
+      mode: INPUT_PULLUP
+      inverted: false
+    id: Button1
+    on_press:
+      - switch.toggle: relay_all
+
+switch:
+  - platform: gpio
+    name: ${friendly_name} 1
+    id: relay1
+    pin: GPIO15
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${friendly_name} 2
+    id: relay2
+    pin: GPIO13
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    name: ${friendly_name} 3
+    id: relay3
+    pin: GPIO14
+    restore_mode: ALWAYS_OFF
+  - platform: template
+    name: ${friendly_name} All
+    id: relay_all
+    lambda: |-
+      if ((id(relay1).state) and (id(relay2).state) and (id(relay3).state)) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: relay1
+      - switch.turn_on: relay2
+      - switch.turn_on: relay3
+    turn_off_action:
+      - switch.turn_off: relay1
+      - switch.turn_off: relay2
+      - switch.turn_off: relay3
+
+status_led:
+  pin: 
+    number: GPIO1
+    inverted: true
+
+sensor:
+  - platform: hlw8012
+    sel_pin: 12
+    cf_pin: 4
+    cf1_pin: 5
+    current:
+      name: ${friendly_name} Current
+    voltage:
+      name: ${friendly_name} Voltage
+    power:
+      name: ${friendly_name} Power
+    update_interval: 60s

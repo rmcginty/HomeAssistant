@@ -1,0 +1,51 @@
+# ##################################
+# LE 904101 RGBW LED Controller - Variant 2
+# For strips that are +RGBW
+# ##################################
+# GPIO02:	Button1
+# GPIO15:	PWM2
+# GPIO12:	PWM3
+# GPIO14: PWM4
+# GPIO05:	PWM1
+# ##################################
+# Required Substitutions
+# ##################################
+# device_name
+# friendly_name
+# ##################################
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO2
+      mode: INPUT_PULLUP
+      inverted: true
+    id: button
+    on_press:
+      - light.toggle: rgb_light
+
+light:
+  - platform: rgbw
+    name: ${friendly_name}
+    id: rgb_light
+    red: output_red
+    green: output_green
+    blue: output_blue
+    white: output_white
+    color_interlock: true
+    effects:
+      !include ../rgb_effects.yaml
+
+output:
+  - platform: esp8266_pwm
+    id: output_red
+    pin: GPIO05
+  - platform: esp8266_pwm
+    id: output_green
+    pin: GPIO15
+  - platform: esp8266_pwm
+    id: output_blue
+    pin: GPIO14
+  - platform: esp8266_pwm
+    id: output_white
+    pin: GPIO12
